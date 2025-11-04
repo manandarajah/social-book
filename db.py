@@ -4,7 +4,7 @@ from gridfs import GridFS
 import os
 
 # Connect to MongoDB and return database
-db = MongoClient(os.environ.get('MONGODB_URI'))['socialbook']
+db = MongoClient(os.environ.get('MONGODB_URI'), tls=True)['socialbook']
 db['users'].create_index('username', unique=True)
 db['posts'].create_index('_id')
 
