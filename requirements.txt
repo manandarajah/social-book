@@ -42,7 +42,7 @@ contourpy==1.3.1
 controlnet_aux==0.0.7
 cryptography==44.0.3
 cstr @ git+https://github.com/WASasquatch/cstr@0520c29a18a7a869a6e5983861d6f7a4c86f8e9b
-custom_rasterizer==0.1.0+torch251.cuda121
+# custom_rasterizer==0.1.0+torch251.cuda121
 cycler==0.12.1
 cymem==2.0.10
 dataclasses-json==0.6.7
