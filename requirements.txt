@@ -258,12 +258,12 @@ tokenizers==0.20.3
 toml==0.10.2
 tomlkit==0.12.0
 toolz==1.0.0
-torch==2.9.0+cu121
-torchaudio==2.5.1+cu121
-torchdiffeq==0.2.5
-torchmetrics==1.7.1
-torchsde==0.2.6
-torchvision==0.20.1+cu121
+# torch==2.9.0+cu121
+# torchaudio==2.5.1+cu121
+# torchdiffeq==0.2.5
+# torchmetrics==1.7.1
+# torchsde==0.2.6
+# torchvision==0.20.1+cu121
 tqdm==4.66.5
 trampoline==0.1.2
 transformers==4.46.3
