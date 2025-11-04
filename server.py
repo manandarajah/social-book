@@ -443,12 +443,8 @@ def create_account():
                 'first_name': first_name,
                 'last_name': last_name,
                 'gender': gender,
-                'sexuality': sexuality,
                 'birthday': birthday,
                 'profile_picture': profile_picture_id,
-                'height': height,
-                'weight': weight,
-                'body_type': body_type,
                 'is_verified': False
             }
 
