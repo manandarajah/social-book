@@ -27,7 +27,7 @@ chardet==5.2.0
 charset-normalizer==3.3.2
 clean-fid==0.1.35
 click==8.1.8
-clip-anytorch==2.6.0
+# clip-anytorch==2.6.0
 clip-interrogator==0.6.0
 cloudpathlib==0.20.0
 cmake==4.0.2
@@ -46,7 +46,7 @@ cstr @ git+https://github.com/WASasquatch/cstr@0520c29a18a7a869a6e5983861d6f7a4c
 cycler==0.12.1
 cymem==2.0.10
 dataclasses-json==0.6.7
-dctorch==0.1.2
+# dctorch==0.1.2
 ddt==1.7.2
 Deprecated==1.2.18
 diffusers==0.31.0
@@ -123,7 +123,7 @@ lazy_loader==0.4
 # Editable install with no version control (library==0.0.0)
 # -e e:\independent media creation tools\ai content creation\comfyui\character creation\flux\fluxgym\sd-scripts
 lightning-utilities==0.14.3
-lion-pytorch==0.0.6
+# lion-pytorch==0.0.6
 llvmlite==0.43.0
 lmdb==1.6.2
 lpips==0.1.4
@@ -151,7 +151,7 @@ numpy==2.1.2
 oauthlib==3.3.1
 omegaconf==2.3.0
 onnxruntime==1.22.0
-open_clip_torch==2.32.0
+# open_clip_torch==2.32.0
 openai-whisper==20240927
 opencv-contrib-python==4.11.0.86
 opencv-contrib-python-headless==4.11.0.86
@@ -198,9 +198,9 @@ python-dateutil==2.9.0.post0
 python-dotenv==1.1.0
 python-multipart==0.0.20
 python-slugify==8.0.4
-pytorch-fid==0.3.0
-pytorch-lightning==1.9.0
-pytorch_optimizer==3.5.0
+# pytorch-fid==0.3.0
+# pytorch-lightning==1.9.0
+# pytorch_optimizer==3.5.0
 pytz==2024.2
 PyWavelets==1.8.0
 PyYAML==6.0.2
