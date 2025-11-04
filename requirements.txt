@@ -147,7 +147,7 @@ networkx==3.3
 ninja==1.11.1.4
 nltk==3.9.1
 numba==0.60.0
-numpy==2.1.2
+# numpy==2.1.2
 oauthlib==3.3.1
 omegaconf==2.3.0
 onnxruntime==1.22.0
