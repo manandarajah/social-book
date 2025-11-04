@@ -32,11 +32,7 @@ function ViewProfile(props) {
             {[
                 { label: "Username", value: profile.username, key: "username" },
                 { label: "Gender", value: profile.gender, key: "gender" },
-                { label: "Sexuality", value: profile.sexuality, key: "sexuality" },
-                { label: "Birthday", value: profile.birthday, key: "birthday" },
-                { label: "Height", value: profile.height, key: "height" },
-                { label: "Weight", value: profile.weight, key: "weight" },
-                { label: "Body Type", value: profile.body_type, key: "body_type" },
+                { label: "Birthday", value: profile.birthday, key: "birthday" }
             ].map(field => (
                 <div className="row mb-2" key={field.key}>
                     <div className="col-5 fw-semibold">{field.label}:</div>

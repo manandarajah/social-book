@@ -120,7 +120,7 @@ language_data==1.3.0
 lark==1.2.2
 lazy_loader==0.4
 # Editable install with no version control (library==0.0.0)
--e e:\independent media creation tools\ai content creation\comfyui\character creation\flux\fluxgym\sd-scripts
+# -e e:\independent media creation tools\ai content creation\comfyui\character creation\flux\fluxgym\sd-scripts
 lightning-utilities==0.14.3
 lion-pytorch==0.0.6
 llvmlite==0.43.0
