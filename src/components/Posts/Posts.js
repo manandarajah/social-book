@@ -32,6 +32,20 @@ function Posts(props) {
                 post.edit_mode = false;
                 post.content = atob(post.content);
 
+                console.log('=== DEBUG INFO ===');
+                console.log('post.created_at:', post.created_at);
+                console.log('typeof:', typeof post.created_at);
+                console.log('new Date(post.created_at):', new Date(post.created_at));
+                console.log('Time diff (ms):', new Date() - new Date(post.created_at));
+                console.log('day constant:', day);
+                console.log('hour constant:', hour);
+                console.log('minute constant:', minute);
+                console.log('second constant:', second);
+                console.log('diff > day?', (new Date() - new Date(post.created_at)) > day);
+                console.log('diff > hour?', (new Date() - new Date(post.created_at)) > hour);
+                console.log('diff > minute?', (new Date() - new Date(post.created_at)) > minute);
+                console.log('diff > second?', (new Date() - new Date(post.created_at)) > second);
+
                 return post;
             });
 
