@@ -12,7 +12,7 @@ from aes import aes_oauth2callback, aes_verify_email, aes_send_registration_emai
 from app_tasks import upload_file, validate_sanitize, validate_sanitize_bulk, is_direct_call
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from datetime import datetime, timedelta
+import datetime
 import os
 import hashlib
 import base64
@@ -621,7 +621,7 @@ def create_post():
             'username': current_user.id,
             'content': content,
             'attachment': attachment_id,
-            'created_at': datetime.now(),
+            'created_at': datetime.datetime.now(),
             'likes': [],
             'comments': []
         }
@@ -685,7 +685,7 @@ def delete_post():
 
     data = request.form
     post_id = ObjectId(data.get('id'))
-    attachment_id = ObjectId(data.get('attachment_id'))
+    attachment_id = ObjectId(data.get('attachment_id')) if data.get("attachment_id") != "None" else None
     token = data.get('csrf_token')
     if not post_id:
         return jsonify({'error': 'Post ID is required'}), 400
