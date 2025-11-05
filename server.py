@@ -766,15 +766,16 @@ def get_posts(username=None):
     
     for post in posts:
         post['_id'] = str(post['_id'])
-        post['created_at'] = post['created_at'].isoformat() if 'created_at' in post else None
-        post['attachment_id'] = str(post['attachment'])
-        post['attachment'] = '/api/files/'+str(post['attachment']) if post['attachment'] is not None else post['attachment']
 
         # When creating/retrieving the post
         print("=====RETRIEVING POST======")
         print(f"Python created_at: {post['created_at']}")
         print(f"After isoformat: {post['created_at'].isoformat()}")
         print(f"Current server time: {datetime.now(timezone.utc).isoformat()}")
+        
+        post['created_at'] = post['created_at'].isoformat() if 'created_at' in post else None
+        post['attachment_id'] = str(post['attachment'])
+        post['attachment'] = '/api/files/'+str(post['attachment']) if post['attachment'] is not None else post['attachment']
 
         profile = get_profile(post['username'])
         post['first_name'] = profile['first_name']
