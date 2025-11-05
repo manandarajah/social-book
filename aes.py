@@ -121,7 +121,15 @@ def aes_send_registration_email(email, first_name):
         user = users_collection.find_one({'username': {"$eq": ADMIN_NAME}})
         print("d")
         creds = user['creds']
-        print("e")
+
+        print({
+            "token": cipher.decrypt(creds["token"].encode()).decode(),
+            "refresh_token": cipher.decrypt(creds["refresh_token"].encode()).decode(),
+            "token_uri": creds["token_uri"],
+            "client_id": CLIENT_ID,
+            "client_secret": CLIENT_SECRET,
+            "scopes": creds["scopes"]
+        })
 
         # Load credentials from the session.
         credentials = google.oauth2.credentials.Credentials(
