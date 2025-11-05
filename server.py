@@ -196,7 +196,7 @@ def serve(name=None):
     # user = get_db_users().find_one({'username':ADMIN_NAME})
 
     # if user['creds'] is None:
-    authorize()
+    # authorize()
 
     # logout()
 
