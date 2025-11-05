@@ -113,10 +113,15 @@ def aes_forgot_password(token):
 
 def aes_send_registration_email(email, first_name):
     try:
+        print("a")
         cipher = Fernet(KEY.encode())
+        print("b")
         users_collection = get_db_users('read')
+        print("c")
         user = users_collection.find_one({'username': {"$eq": ADMIN_NAME}})
+        print("d")
         creds = user['creds']
+        print("e")
 
         # Load credentials from the session.
         credentials = google.oauth2.credentials.Credentials(
@@ -127,33 +132,47 @@ def aes_send_registration_email(email, first_name):
             client_secret = CLIENT_SECRET,
             scopes = creds["scopes"]
         )
+        print("f")
 
         # Token Serializer
         s = URLSafeTimedSerializer(CLIENT_SECRET)
+        print("g")
         token = s.dumps(email, salt="email-confirm")
+        print("h")
         verify_url = url_for("verify_email", token=token, _external=True)
+        print("i")
 
         gmail = build(API_SERVICE, API_VERSION, credentials=credentials)
+        print("j")
 
         message = EmailMessage()
+        print("k")
 
         message.set_content('Hi '+first_name+',<br><br>Thank you for registering with us! <a href='+verify_url+'>Verify your email!</a>', subtype='html')
+        print("l")
 
         message['To'] = email
+        print("m")
         message['From'] = "no-reply@dating-social-media.com"
+        print("n")
         message['Subject'] = "Verify Email - Dating Social Media"
+        print("o")
 
         # encoded message
         encoded_message = base64.urlsafe_b64encode(message.as_bytes()) \
             .decode()
+        print("p")
 
         create_message = {
             'raw': encoded_message
         }
+        print("q")
         # pylint: disable=E1101
         send_message = (gmail.users().messages().send
                         (userId="me", body=create_message).execute())
+        print("r")
         print(F'Message Id: {send_message["id"]}')
+        print("s")
         # return requests.post(
         #     "https://api.mailgun.net/v3/mg.socialmedia.com/messages",
         #     auth=("api", CLIENT_SECRET),

@@ -435,10 +435,9 @@ def create_account():
         profile_picture_id = None
 
         try:
-            print("file")
             if profile_picture and profile_picture.filename:
                 profile_picture_id = upload_file(profile_picture)
-            print("doc")
+
             user_doc = {
                 'username': username,
                 'email': email,
@@ -451,9 +450,9 @@ def create_account():
                 'profile_picture': profile_picture_id,
                 'is_verified': False
             }
-            print("email")
+
             aes_send_registration_email(email, first_name)
-            print("insert")
+            
             users_collection.insert_one(user_doc)
         except Exception as e:
             return render_template('create-account.html', err=f'An error occurred while creating the account. {e}'), 500
