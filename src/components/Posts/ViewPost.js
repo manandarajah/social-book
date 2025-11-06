@@ -10,20 +10,6 @@ function ViewPost(props) {
     const hour = 3600000; //1 hour in milliseconds
     const day = 86400000; // 1 day in milliseconds
 
-    console.log('=== DEBUG INFO ===');
-    console.log('post.created_at:', post.created_at);
-    console.log('typeof:', typeof post.created_at);
-    console.log('new Date(post.created_at):', new Date(post.created_at));
-    console.log('Time diff (ms):', new Date() - new Date(post.created_at));
-    console.log('day constant:', day);
-    console.log('hour constant:', hour);
-    console.log('minute constant:', minute);
-    console.log('second constant:', second);
-    console.log('diff > day?', (new Date() - new Date(post.created_at)) > day);
-    console.log('diff > hour?', (new Date() - new Date(post.created_at)) > hour);
-    console.log('diff > minute?', (new Date() - new Date(post.created_at)) > minute);
-    console.log('diff > second?', (new Date() - new Date(post.created_at)) > second);
-
     return (
         <div className="card mb-3 shadow-sm" key={post}>
             <div className="card-body">
@@ -56,22 +42,22 @@ function ViewPost(props) {
                             {post.first_name} {post.last_name}
                         </a>
                         <div className="text-muted" style={{ fontSize: '0.9rem' }}>
-                            {new Date() - new Date(post.created_at) > day && (
+                            {new Date(post.current_time) - new Date(post.created_at) > day && (
                                 <span>{new Date(post.created_at).toDateString()}</span>
                             )}
-                            {(new Date() - new Date(post.created_at) > hour
-                                && new Date() - new Date(post.created_at) < day) && (
-                                <span>{Math.floor((new Date() - new Date(post.created_at))/hour)} hours</span>
+                            {(new Date(post.current_time) - new Date(post.created_at) > hour
+                                && new Date(post.current_time) - new Date(post.created_at) < day) && (
+                                <span>{Math.floor((new Date(post.current_time) - new Date(post.created_at))/hour)} hours</span>
                             )}
-                            {(new Date() - new Date(post.created_at) > minute
-                                && new Date() - new Date(post.created_at) < hour) && (
-                                <span>{Math.floor((new Date() - new Date(post.created_at))/minute)} minutes</span>
+                            {(new Date(post.current_time) - new Date(post.created_at) > minute
+                                && new Date(post.current_time) - new Date(post.created_at) < hour) && (
+                                <span>{Math.floor((new Date(post.current_time) - new Date(post.created_at))/minute)} minutes</span>
                             )}
-                            {(new Date() - new Date(post.created_at) > second
-                                && new Date() - new Date(post.created_at) < minute) && (
-                                <span>{Math.floor((new Date() - new Date(post.created_at))/second)} seconds</span>
+                            {(new Date(post.current_time) - new Date(post.created_at) > second
+                                && new Date(post.current_time) - new Date(post.created_at) < minute) && (
+                                <span>{Math.floor((new Date(post.current_time) - new Date(post.created_at))/second)} seconds</span>
                             )}
-                            {new Date() - new Date(post.created_at) <= second && (
+                            {new Date(post.current_time) - new Date(post.created_at) <= second && (
                                 <span>Just now</span>
                             )}
                             <i className="bi bi-globe-americas"></i>

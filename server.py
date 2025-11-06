@@ -123,6 +123,13 @@ def load_user(user_id):
 def exempt_render_requests():
     return request.path in ['/health', '/favicon.ico']
 
+@app.before_request
+def before_request():
+    
+    if 'posts' in request.path:
+        get_db_posts('write').update_many({}, {'$set': {'current_time': datetime.now(timezone.utc)}})
+        print('Updated posts')
+
 @app.after_request
 def generate_csrf_cookie(response):
 
@@ -626,12 +633,6 @@ def create_post():
             'comments': []
         }
 
-        # When creating/retrieving the post
-        print("=====CREATING POST======")
-        print(f"Python created_at: {post['created_at']}")
-        print(f"After isoformat: {post['created_at'].isoformat()}")
-        print(f"Current server time: {datetime.now(timezone.utc).isoformat()}")
-
         inserted_post = get_db_posts('write').insert_one(post)
     except Exception as e:
         print(f"Error creating post: {e}")
@@ -766,14 +767,8 @@ def get_posts(username=None):
     
     for post in posts:
         post['_id'] = str(post['_id'])
-
-        # When creating/retrieving the post
-        print("=====RETRIEVING POST======")
-        print(f"Python created_at: {post['created_at']}")
-        print(f"After isoformat: {post['created_at'].isoformat()}")
-        print(f"Current server time: {datetime.now(timezone.utc).isoformat()}")
-        
-        post['created_at'] = post['created_at'].isoformat() if 'created_at' in post else None
+        post['created_at'] = post['created_at'].isoformat()
+        post['current_time'] = post['current_time'].isoformat()
         post['attachment_id'] = str(post['attachment'])
         post['attachment'] = '/api/files/'+str(post['attachment']) if post['attachment'] is not None else post['attachment']
 
