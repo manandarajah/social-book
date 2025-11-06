@@ -621,7 +621,7 @@ def create_post():
             'username': current_user.id,
             'content': content,
             'attachment': attachment_id,
-            'created_at': datetime.now(),
+            'created_at': datetime.now(timezone.utc),
             'likes': [],
             'comments': []
         }
@@ -630,7 +630,7 @@ def create_post():
         print("=====CREATING POST======")
         print(f"Python created_at: {post['created_at']}")
         print(f"After isoformat: {post['created_at'].isoformat()}")
-        print(f"Current server time: {datetime.now().isoformat()}")
+        print(f"Current server time: {datetime.now(timezone.utc).isoformat()}")
 
         inserted_post = get_db_posts('write').insert_one(post)
     except Exception as e:
@@ -771,8 +771,8 @@ def get_posts(username=None):
         print("=====RETRIEVING POST======")
         print(f"Python created_at: {post['created_at']}")
         print(f"After isoformat: {post['created_at'].isoformat()}")
-        print(f"Current server time: {datetime.now().isoformat()}")
-
+        print(f"Current server time: {datetime.now(timezone.utc).isoformat()}")
+        
         post['created_at'] = post['created_at'].isoformat() if 'created_at' in post else None
         post['attachment_id'] = str(post['attachment'])
         post['attachment'] = '/api/files/'+str(post['attachment']) if post['attachment'] is not None else post['attachment']
