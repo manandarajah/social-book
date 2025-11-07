@@ -26,9 +26,11 @@ app.config['SESSION_KEY_PREFIX'] = 'session:'
 app.config["SESSION_PERMANENT"] = True     # Sessions expire when the browser is closed
 app.config["SESSION_TYPE"] = "filesystem"     # Store session data in files
 app.config['SESSION_COOKIE_SAMESITE'] = 'strict'
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
-app.secret_key = secrets.token_hex(32)
+# new_secrets = secrets.token_hex(32)
+# print(new_secrets)
+app.secret_key = os.environ.get('SECRETS')
+res_hash = os.environ.get('RES_HASH')
 
 init_db()
 
@@ -37,13 +39,13 @@ csp = {
     'default-src': ["'self'"],
     'script-src': [
         "'self'",
-        "'unsafe-inline'",
+        f"'{res_hash}'",
         'https://cdn.jsdelivr.net',
         'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js'
     ],
     'style-src': [
         "'self'",
-        "'unsafe-inline'",
+        f"'{res_hash}'",
         'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
         'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css'
     ],
@@ -70,7 +72,7 @@ CORS(
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
-    default_limits=["3 per 3 hours"],  # Applied to ALL routes
+    default_limits=["3 per 3 hours"],
     storage_uri="memory://localhost:6379"
 )
 
@@ -123,6 +125,14 @@ def load_user(user_id):
 def exempt_render_requests():
     return request.path in ['/health', '/favicon.ico']
 
+@limiter.request_filter
+def exempt_api_requests():
+    return hasattr(current_user, 'id') and current_user.is_authenticated and current_user.is_active
+
+@limiter.request_filter
+def exempt_reloads():
+    return request.method == 'GET' or (request.get_json(silent=True) is not None and 'reload' in request.get_json(silent=True).get('nav_type'))
+
 @app.after_request
 def generate_csrf_cookie(response):
 
@@ -166,13 +176,14 @@ def set_security_headers(response):
     response.headers['Content-Security-Policy'] = (
         "frame-ancestors 'none';"
         "default-src 'self'; "
-        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css; "
-        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js;"                             
+        f"style-src 'self' '{res_hash}' https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css; "
+        f"script-src 'self' '{res_hash}' https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js;"                             
     )
     
     return response
 
 @app.route('/oauth2callback')
+@limiter.exempt
 def oauth2callback():
     # Specify the state when creating the flow in the callback so that it can
     # verified in the authorization server response.
@@ -194,6 +205,7 @@ def serve_file(file_id):
 # Serve React App
 @app.route('/')
 @app.route('/<string:name>', methods=['GET'])
+@limiter.exempt
 def serve(name=None):
     # user = get_db_users().find_one({'username':ADMIN_NAME})
 
@@ -205,7 +217,6 @@ def serve(name=None):
     if not current_user.is_authenticated:
         return redirect(url_for("login"))
     else:
-        limiter.reset()
         return send_from_directory(app.static_folder, 'index.html')
     # return ''
 
@@ -289,7 +300,6 @@ def login():
         
         regenerate_session()
 
-        limiter.reset()
         return redirect('/')
     else:
         reason = request.args.get('reason')
@@ -301,7 +311,6 @@ def login():
         else:
             message = None
         # return send_from_directory(app.static_folder, 'login-form.html')
-        limiter.reset()
         return render_template('login-form.html', display='d-none' if message is None else '', message=message)
 
 @app.route('/forgot-password', methods=['GET', 'POST'])
@@ -325,7 +334,6 @@ def forgot_password():
 
         aes_send_forgot_password_email(email, user['first_name'])
 
-        limiter.reset()
         return render_template('forgot-password.html', message=message)
     else:
         token = request.args.get('token')
@@ -396,12 +404,8 @@ def create_account():
         first_name = data.get('first_name')
         last_name = data.get('last_name')
         gender = data.get('gender')
-        sexuality = data.get('sexuality')
         birthday = data.get('birthday')
         profile_picture = request.files['profile_picture'] if request.content_type.startswith('multipart/form-data') else None
-        height = data.get('height')
-        weight = data.get('weight')
-        body_type = data.get('body_type')
 
         data_list = [
             {'input': username, 'pattern': TEXT_REGEX},
@@ -459,10 +463,8 @@ def create_account():
         except Exception as e:
             return render_template('create-account.html', err=f'An error occurred while creating the account. {e}'), 500
 
-        limiter.reset()
         return render_template('create-account.html', message='Check your email for the verification link'), 200
     else:
-        limiter.reset()    
         return render_template('create-account.html')
 
 @app.route("/verify/<token>")
@@ -470,7 +472,7 @@ def verify_email(token):
     # Handles email verification after clicking the link.
     return aes_verify_email(token)
 
-@app.route('/update-account',methods=['GET','POST'])
+@app.route('/update-account',methods=['POST'])
 @login_required
 def update_account():
 
@@ -542,6 +544,9 @@ def update_account():
         if isinstance(update_fields['profile_picture'], str):
             return jsonify({'error': update_fields['profile_picture']}), 400
 
+        if update_fields['profile_picture'] is None and remove_old_picture_id is None:
+            del update_fields['profile_picture']
+
         get_db_users('write').update_one({'username': {"$eq": current_user.id}}, {'$set': update_fields})
 
         if remove_old_picture_id or 'profile_picture' in update_fields:
@@ -563,11 +568,11 @@ def update_account():
         current_user.id = new_username
 
     regenerate_session()
-    limiter.reset()
     #if result.modified_count > 0:
     return redirect("/"+current_user.id)
 
 @app.route('/logout', methods=['GET'])
+@limiter.exempt
 def logout():
 
     if is_direct_call():
@@ -585,10 +590,9 @@ def logout():
     # cookie_name = app.config.get('SESSION_COOKIE_NAME', 'session')
     # response.set_cookie(cookie_name, '', expires=0)
 
-    limiter.reset()
     return redirect(url_for('login'))
 
-@app.route('/create-post', methods=['GET','POST'])
+@app.route('/create-post', methods=['POST'])
 @login_required
 def create_post():
 
@@ -634,10 +638,9 @@ def create_post():
     print("Posted successfully!")
 
     regenerate_session()
-    limiter.reset()
     return redirect('/')
 
-@app.route('/update-post', methods=['GET','POST'])
+@app.route('/update-post', methods=['POST'])
 @login_required
 def update_post():
 
@@ -674,10 +677,9 @@ def update_post():
         return jsonify({'error': 'Post not found or forbidden'}), 403
 
     regenerate_session()
-    limiter.reset()
     return redirect('/')
 
-@app.route('/delete-post', methods=['GET','POST'])
+@app.route('/delete-post', methods=['POST'])
 @login_required
 def delete_post():
     if is_direct_call():
@@ -707,7 +709,6 @@ def delete_post():
         return jsonify({'error': f'Error while deleting post: {str(e)}'}), 500
 
     regenerate_session()
-    limiter.reset()
     return redirect('/')
 
 @app.route('/api/current-user', methods=['POST'])
@@ -743,7 +744,6 @@ def get_profile(username):
         user.pop('creds', None)
         user.update({'current_user':True}) if username == current_user.id else user.update({'current_user':False})
 
-    limiter.reset()
     return user
 
 @app.route('/api/posts', methods=['POST'])
@@ -770,7 +770,6 @@ def get_posts(username=None):
         post['profile_picture'] = profile['profile_picture']
         post['content'] = post['content'].decode('utf-8') 
 
-    limiter.reset()
     return jsonify({'posts': posts})
 
 # Example API endpoint
