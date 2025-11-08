@@ -6,7 +6,6 @@ from flask_session import Session
 from flask_talisman import Talisman
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask_resources import User
 import os
 import hashlib
 import binascii
@@ -15,8 +14,6 @@ sec_bp = Blueprint('sec', __name__)
 
 res_hash = None
 
-login_manager = LoginManager()
-login_manager.session_protection = 'strong'  # Important!
 limiter = Limiter(
     key_func=get_remote_address,
     default_limits=["3 per 3 hours"],
@@ -71,7 +68,6 @@ def init_config(app, routes, blueprints):
         session_cookie_http_only=True
     )
 
-    login_manager.init_app(app)
     limiter.init_app(app)
 
     # Add all app-level routes from server.py as blueprint routes
@@ -102,10 +98,6 @@ def hash_password(password):
     hash_bytes = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
 
     return binascii.hexlify(hash_bytes).decode('utf-8'), binascii.hexlify(salt).decode('utf-8')
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.get(user_id)
 
 @limiter.request_filter
 def exempt_render_requests():

@@ -1,5 +1,6 @@
 from flask import Flask, redirect, url_for, send_from_directory, jsonify
-from flask_login import current_user
+from flask_login import LoginManager, current_user
+from flask_resources import User
 from db import init_db
 from security_config import limiter, init_config
 import accounts as acc
@@ -7,6 +8,13 @@ import resources as res
 import posts
 
 app = Flask(__name__, template_folder='public', static_folder='build', static_url_path='')
+
+login_manager = LoginManager(app)
+login_manager.session_protection = 'strong'  # Important!
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.get(user_id)
 
 def config_app():
     routes = [
