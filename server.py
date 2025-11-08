@@ -34,6 +34,8 @@ def config_app():
     init_config(app, routes, blueprints)
     init_db()
 
+config_app()
+
 # Serve React App
 @app.route('/')
 @app.route('/<string:name>', methods=['GET'])
@@ -62,5 +64,4 @@ def favicon():
     return '', 204
 
 if __name__ == '__main__':
-    config_app()
-    app.run(port=5000,use_reloader=False,debug=False)
+    app.run(port=5000)
