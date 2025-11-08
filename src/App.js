@@ -50,7 +50,7 @@ function App() {
       {currentUser.is_verified && (
         <div className="bg-light" style={{ minHeight: '100vh' }}>
           {!path.endsWith("/") && <Profile get_cookie={getCsrfTokenFromCookie} />}
-          {path.endsWith("/") && <Navbar current_user={currentUser} />}
+          {path.endsWith("/") && <Navbar current_user={currentUser} get_cookie={getCsrfTokenFromCookie} />}
           {path.endsWith("/") && (
             <div className="container-fluid mt-4">
               <div className="row">

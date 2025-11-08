@@ -3,6 +3,7 @@ import React from 'react';
 function Navbar(props) {
     const current_user = props.current_user;
     const [showDropdown, setShowDropdown] = React.useState(false);
+    const csrf_token = props.get_cookie();
 
     // Function to handle clicking outside the dropdown to close it
     React.useEffect(() => {
@@ -69,7 +70,12 @@ function Navbar(props) {
                             zIndex: 1000,
                         }}
                     >
-                        <a className='dropdown-item' href="/logout">Logout</a>
+                        <form action="/logout" method="POST">
+                            <button type="submit" className="dropdown-item">
+                                Logout
+                            </button>
+                            <input type="hidden" name="csrf_token" value={csrf_token} />
+                        </form>
                     </div>
                 )}
             </div>

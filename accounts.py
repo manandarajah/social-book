@@ -1,0 +1,343 @@
+from bson.objectid import ObjectId
+from flask import Blueprint, jsonify, redirect, request, render_template, url_for
+from pymongo.errors import DuplicateKeyError
+from flask_login import login_required, current_user, login_user, logout_user
+from aes import aes_forgot_password, aes_send_forgot_password_email, aes_send_registration_email, aes_verify_email, confirm_token
+from flask_resources import User
+from app_tasks import is_direct_call, upload_file, validate_sanitize, validate_sanitize_bulk
+from db import get_db_file, get_db_posts, get_db_users
+from regexes import PASS_REGEX, EMAIL_REGEX, TEXT_REGEX, LEGAL_TEXT_REGEX, GEN_REGEX, DATE_REGEX
+from security_config import hash_password, limiter, regenerate_session
+import hashlib
+import binascii
+
+acc_bp = Blueprint('acc', __name__)
+context = None;
+
+def config_app(app):
+    global context
+    context = app
+
+def get_routes():
+    return [
+        ('/login', 'login', login, ['GET', 'POST']),
+        ('/logout', 'logout', logout, ['GET']),
+        ('/create-account', 'create_account', create_account, ['POST']),
+        ('/update-account', 'update_account', update_account, ['POST']),
+        ('/forgot-password', 'forgot_password', forgot_password, ['GET', 'POST']),
+        ('/reset-password', 'reset_password', reset_password, ['GET', 'POST']),
+        ('/verify/<token>', 'verify_email', verify_email, ['GET']),
+        ('/api/current-user', 'get_current_user', get_current_user, ['POST']),
+        ('/api/profile/<string:username>', 'get_profile', get_profile, ['POST'])
+    ]
+
+def login():
+    if request.method == 'POST':
+        data = request.form
+        token = data.get('csrf_token')
+        identifier = data.get('loginName')
+        password = data.get('loginPassword')
+        data_list = [
+            {
+                'input': identifier,
+                'pattern': TEXT_REGEX if '@' not in identifier else EMAIL_REGEX
+            },
+            {
+                'input': password,
+                'pattern': PASS_REGEX
+            }
+        ]
+
+        if not validate_sanitize_bulk(data_list, 'input'):
+            return render_template('login-form.html', err='Invalid username/email or password'), 401
+
+        users_collection = get_db_users('read')
+        user = users_collection.find_one({
+            '$or': [
+                {'username': {"$eq": identifier}},
+                {'email': {"$eq": identifier}}
+            ]
+        })
+
+        if not user:
+            return render_template('login-form.html', err='Invalid username/email or password'), 401
+
+        salt_hex = user.get('salt')
+        password_hash_db = user.get('password_hash')
+
+        if not salt_hex or not password_hash_db:
+            return render_template('login-form.html', err='Invalid username/email or password'), 401
+
+        salt = binascii.unhexlify(salt_hex)
+        hash_bytes = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
+        password_hash = binascii.hexlify(hash_bytes).decode('utf-8')
+
+        if password_hash != password_hash_db:
+            return render_template('login-form.html', err='Invalid username/email or password'), 401
+
+        print("Login successful!")
+        user_obj = User(user.get('username'))
+        login_user(user_obj)
+        regenerate_session(context)
+
+        return redirect('/')
+    else:
+        reason = request.args.get('reason')
+        if reason == 'timeout':
+            message = "Session expired due to inactivity"
+        elif reason == 'expired':
+            message = "Session expired"
+        else:
+            message = None
+        return render_template('login-form.html', display='d-none' if message is None else '', message=message)
+
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip()
+        token = request.form.get('csrf_token').strip()
+        if not email:
+            return render_template('forgot-password.html', err='Email is required'), 400
+
+        if not validate_sanitize(email, EMAIL_REGEX):
+            return render_template('forgot-password.html', err='Invalid email address'), 400
+
+        user = get_db_users('read').find_one({'email': {"$eq": email}})
+
+        if not user:
+            return render_template('forgot-password.html', err='No account associated with this email address'), 400
+        message = "If this email exists in our system, a password reset link has been sent."
+        aes_send_forgot_password_email(email, user['first_name'])
+        return render_template('forgot-password.html', message=message)
+    else:
+        token = request.args.get('token')
+        if token and aes_forgot_password(token):
+            return redirect(url_for('acc.reset_password', token=token))
+        else:
+            return render_template('forgot-password.html')
+
+def reset_password():
+    if request.method == 'POST':
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        csrf_token = request.form.get('csrf_token')
+        token = request.form.get('token')
+        if not password or not confirm_password:
+            return render_template('reset-password.html', err='Please fill out all fields', token=token), 400
+        if password != confirm_password:
+            return render_template('reset-password.html', err='Passwords do not match', token=token), 400
+        if not validate_sanitize(password, PASS_REGEX):
+            return render_template('reset-password.html', err='Password does not meet requirements', token=token), 400
+        email = None
+        try:
+            email = confirm_token(token)
+        except Exception:
+            return render_template('reset-password.html', err='Invalid reset token', token=token), 400
+        if not email:
+            return render_template('reset-password.html', err='Invalid or expired token', token=token), 400
+
+        password_hash, salt_hex = hash_password(password)
+        update_result = get_db_users('write').update_one({'email': {"$eq": email}}, {'$set': {'password_hash': password_hash, 'salt': salt_hex}})
+
+        if update_result.modified_count == 0:
+            return render_template('reset-password.html', err='Could not update password. Contact support.'), 500
+        message = 'Your password has been reset successfully.'
+        return render_template('reset-password.html', message=message)
+
+    token = request.args.get('token')
+    return render_template('reset-password.html', token=token)
+
+def create_account():
+    if request.method == 'POST':
+        users_collection = get_db_users('write')
+        data = request.form
+        token = data.get('csrf_token')
+        username = data.get('username')
+        email = data.get('email')
+        password = data.get('password')
+        confirm_password = data.get('confirm_password')
+        first_name = data.get('first_name')
+        last_name = data.get('last_name')
+        gender = data.get('gender')
+        birthday = data.get('birthday')
+        profile_picture = request.files['profile_picture'] if request.content_type.startswith('multipart/form-data') else None
+
+        data_list = [
+            {'input': username, 'pattern': TEXT_REGEX},
+            {'input': email, 'pattern': EMAIL_REGEX},
+            {'input': password, 'pattern': PASS_REGEX},
+            {'input': confirm_password, 'pattern': PASS_REGEX},
+            {'input': first_name, 'pattern': LEGAL_TEXT_REGEX},
+            {'input': last_name, 'pattern': LEGAL_TEXT_REGEX},
+            {"input": gender, "pattern": GEN_REGEX},
+            {"input": birthday, "pattern": DATE_REGEX}
+        ]
+
+        if not username or not email or not password or not confirm_password:
+            return render_template('create-account.html', err='Missing required fields'), 400
+
+        if password != confirm_password:
+            return render_template('create-account.html', err='Passwords do not match'), 400
+
+        if not validate_sanitize_bulk(data_list, 'input'):
+            return render_template('create-account.html', err='Invalid input'), 400
+
+        if users_collection.find_one({'$or': [{'username': {"$eq": username}}, {'email': {"$eq": email}}]}):
+            return render_template('create-account.html', err='Username or email already exists'), 400
+
+        password_hash, salt_hex = hash_password(password)
+        profile_picture_id = None
+
+        try:
+            if profile_picture and profile_picture.filename:
+                profile_picture_id = upload_file(profile_picture)
+
+            user_doc = {
+                'username': username,
+                'email': email,
+                'password_hash': password_hash,
+                'salt': salt_hex,
+                'first_name': first_name,
+                'last_name': last_name,
+                'gender': gender,
+                'birthday': birthday,
+                'profile_picture': profile_picture_id,
+                'is_verified': False
+            }
+
+            aes_send_registration_email(email, first_name)
+            users_collection.insert_one(user_doc)
+        except Exception as e:
+            return render_template('create-account.html', err=f'An error occurred while creating the account. {e}'), 500
+
+        return render_template('create-account.html', message='Check your email for the verification link'), 200
+    else:
+        return render_template('create-account.html')
+
+def verify_email(token):
+    return aes_verify_email(token)
+
+@login_required
+def update_account():
+    if is_direct_call():
+        return jsonify({'error': 'Direct calls are not allowed. Access denied!'}), 400
+
+    if request.form:
+        data = request.form
+        files = request.files
+    else:
+        data = request.json or {}
+        files = {}
+
+    token = data.get('csrf_token')
+    update_fields = {}
+
+    updatable_fields = [
+        {"field": "username", "pattern": TEXT_REGEX},
+        {"field": "email", "pattern": EMAIL_REGEX},
+        {"field": "first_name", "pattern": LEGAL_TEXT_REGEX},
+        {"field": "last_name", "pattern": LEGAL_TEXT_REGEX},
+        {"field": "gender", "pattern": GEN_REGEX},
+        {"field": "birthday", "pattern": DATE_REGEX}
+    ]
+
+    for update_obj in updatable_fields:
+        value = data.get(update_obj['field'])
+        if value is not None and value != "":
+            if not validate_sanitize(value, update_obj['pattern']):
+                return jsonify({'success': False, 'error': 'Invalid input'}), 400
+            update_fields[update_obj['field']] = value
+
+    old_profile_picture_id = data.get('profile_picture_id') if data.get('profile_picture_id') != "None" else None
+    remove_old_picture_id = data.get('remove_profile_picture') if data.get('remove_profile_picture') else None
+    profile_picture = request.files['profile_picture'] if request.content_type.startswith('multipart/form-data') else None
+
+    if profile_picture and remove_old_picture_id:
+        return jsonify({'success': False, 'message': "These two operations can't happen concurrently"}), 400
+
+    new_password = data.get('password')
+    confirm_password = data.get('confirm_password')
+    if new_password:
+        if not confirm_password or new_password != confirm_password:
+            return jsonify({'success': False, 'error': 'Passwords do not match'}), 400
+
+        password_hash, salt_hex = hash_password(new_password)
+        update_fields['password_hash'] = password_hash
+        update_fields['salt'] = salt_hex
+
+    if not update_fields:
+        return jsonify({'success': False, 'error': 'No fields to update'}), 400
+
+    new_username = None
+
+    try:
+        update_fields['profile_picture'] = upload_file(profile_picture) if profile_picture and profile_picture.filename else None
+
+        if isinstance(update_fields['profile_picture'], str):
+            return jsonify({'error': update_fields['profile_picture']}), 400
+
+        if update_fields['profile_picture'] is None and remove_old_picture_id is None:
+            del update_fields['profile_picture']
+
+        get_db_users('write').update_one({'username': {"$eq": current_user.id}}, {'$set': update_fields})
+
+        if remove_old_picture_id or 'profile_picture' in update_fields:
+            if old_profile_picture_id and get_db_file('read').get(ObjectId(old_profile_picture_id)) is not None:
+                get_db_file('write').delete(ObjectId(old_profile_picture_id))
+
+        if 'username' in update_fields and current_user.id != update_fields['username']:
+            old_username = current_user.id
+            new_username = update_fields['username']
+            get_db_posts('write').update_many({'username': {"$eq": old_username}}, {'$set': {'username': new_username}})
+    except DuplicateKeyError:
+        return jsonify({'error': 'Username already taken'}), 409
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+    if new_username:
+        current_user.id = new_username
+
+    regenerate_session(context)
+    return redirect("/" + current_user.id)
+
+@login_required
+def get_current_user():
+
+    if is_direct_call():
+        return jsonify({'error': 'Direct calls are not allowed. Access denied!'}), 400
+
+    return get_profile(current_user.id)
+
+@login_required
+def get_profile(username):
+
+    if is_direct_call():
+        return jsonify({'error': 'Direct calls are not allowed. Access denied!'}), 400
+
+    if not username:
+        return None
+
+    if not validate_sanitize(username, TEXT_REGEX):
+        return jsonify({'error': 'Invalid username'})
+
+    user = get_db_users('read').find_one({'username': {"$eq": username}})
+
+    if user:
+        user['profile_picture_id'] = str(user['profile_picture'])
+        user['profile_picture'] = '/api/files/'+str(user['profile_picture']) if user['profile_picture'] is not None else user['profile_picture']
+        user.pop('password_hash', None)
+        user.pop('salt', None)
+        user.pop('_id', None)
+        user.pop('creds', None)
+        user.update({'current_user':True}) if username == current_user.id else user.update({'current_user':False})
+
+    return user
+
+@acc_bp.route('/logout', methods=['POST'])
+@limiter.exempt
+def logout():
+    if is_direct_call():
+        return jsonify({'error': 'Direct calls are not allowed. Access denied!'}), 400
+
+    logout_user()
+    regenerate_session(context)
+    return redirect(url_for('sec.login'))
