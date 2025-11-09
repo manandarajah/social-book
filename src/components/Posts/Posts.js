@@ -90,7 +90,8 @@ function Posts(props) {
             setPosts(prevPosts => prevPosts.filter(p => p.id !== postId));
         })
         .catch(err => {
-            setError(`Delete failed: ${err.message}`);
+            // setError(`Delete failed: ${err.message}`);
+            console.log(`Delete failed: ${err.message}`);
         });
     }
 
