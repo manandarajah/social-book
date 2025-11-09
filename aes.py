@@ -144,7 +144,7 @@ def aes_send_registration_email(email, first_name):
 
         message['To'] = email
         message['From'] = "no-reply@dating-social-media.com"
-        message['Subject'] = "Verify Email - Dating Social Media"
+        message['Subject'] = "Verify Email - Social Book"
 
         # encoded message
         encoded_message = base64.urlsafe_b64encode(message.as_bytes()) \
