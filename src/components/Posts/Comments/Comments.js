@@ -5,7 +5,7 @@ import EditComment from './EditComment';
 function Comments(props) {
     const post = props.post;
     const [comments, setComments] = React.useState(post.comments);
-    const [error, setError] = React.useState("");
+    // const [error, setError] = React.useState("");
 
     // Handle edit mode toggle for a comment by id
     const handleEdit = (commentId, value) => {
@@ -38,7 +38,8 @@ function Comments(props) {
             setComments(prevComments => prevComments.filter(c => c.id !== commentId));
         })
         .catch(err => {
-            setError(`Delete failed: ${err.message}`);
+            // setError(`Delete failed: ${err.message}`);
+            console.log(`Delete failed: ${err.message}`);
         });
     }
 

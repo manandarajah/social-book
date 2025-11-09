@@ -5,8 +5,8 @@ import EditPost from './EditPost';
 function Posts(props) {
     const csrf_token = props.get_cookie();
     const [posts, setPosts] = React.useState([]);
-    const [loading, setLoading] = React.useState(true);
-    const [error, setError] = React.useState(null);
+    // const [loading, setLoading] = React.useState(true);
+    // const [error, setError] = React.useState(null);
     var path = window.location.pathname.endsWith("/") ? '' : window.location.pathname;
     var post_counter = 0;
 
@@ -48,11 +48,12 @@ function Posts(props) {
             });
 
             setPosts(data.posts);
-            setLoading(false);
+            // setLoading(false);
         })
         .catch(err => {
-            setError(err.message);
-            setLoading(false);
+            // setError(err.message);
+            // setLoading(false);
+            console.log(`Delete failed: ${err.message}`);
         });
     }, []);
 
