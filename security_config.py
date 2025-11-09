@@ -18,6 +18,7 @@ res_hash_2 = None
 limiter = Limiter(
     key_func=get_remote_address,
     default_limits=["3 per 3 hours"],
+    default_limits_deduct_when=lambda r: r.status_code >= 400,
     storage_uri="memory://localhost:6379"
 )
 

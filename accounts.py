@@ -35,7 +35,7 @@ def login():
     if request.method == 'POST':
         data = request.form
         token = data.get('csrf_token')
-        identifier = data.get('loginName')
+        identifier = data.get('loginName').lower()
         password = data.get('loginPassword')
         data_list = [
             {
@@ -93,7 +93,7 @@ def login():
 
 def forgot_password():
     if request.method == 'POST':
-        email = request.form.get('email', '').strip()
+        email = request.form.get('email', '').strip().lower()
         token = request.form.get('csrf_token').strip()
         if not email:
             return render_template('forgot-password.html', err='Email is required'), 400
@@ -129,7 +129,7 @@ def reset_password():
             return render_template('reset-password.html', err='Password does not meet requirements', token=token), 400
         email = None
         try:
-            email = confirm_token(token)
+            email = confirm_token(token).lower()
         except Exception:
             return render_template('reset-password.html', err='Invalid reset token', token=token), 400
         if not email:
@@ -151,8 +151,8 @@ def create_account():
         users_collection = get_db_users('write')
         data = request.form
         token = data.get('csrf_token')
-        username = data.get('username')
-        email = data.get('email')
+        username = data.get('username').lower()
+        email = data.get('email').lower()
         password = data.get('password')
         confirm_password = data.get('confirm_password')
         first_name = data.get('first_name')
@@ -245,7 +245,8 @@ def update_account():
         if value is not None and value != "":
             if not validate_sanitize(value, update_obj['pattern']):
                 return jsonify({'success': False, 'error': 'Invalid input'}), 400
-            update_fields[update_obj['field']] = value
+            update_fields[update_obj['field']] = value.lower() if update_obj['field'] == ('username' or 'email') else value
+
 
     old_profile_picture_id = data.get('profile_picture_id') if data.get('profile_picture_id') != "None" else None
     remove_old_picture_id = data.get('remove_profile_picture') if data.get('remove_profile_picture') else None
