@@ -22,7 +22,7 @@ def get_routes():
     return [
         ('/login', 'login', login, ['GET', 'POST']),
         ('/logout', 'logout', logout, ['GET']),
-        ('/create-account', 'create_account', create_account, ['POST']),
+        ('/create-account', 'create_account', create_account, ['GET','POST']),
         ('/update-account', 'update_account', update_account, ['POST']),
         ('/forgot-password', 'forgot_password', forgot_password, ['GET', 'POST']),
         ('/reset-password', 'reset_password', reset_password, ['GET', 'POST']),
