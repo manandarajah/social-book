@@ -64,7 +64,7 @@ def init_config(app, routes):
         app,
         frame_options='DENY', 
         content_security_policy=csp, 
-        force_https=False, 
+        force_https=False, # false because the current infrastructure (render.com), already forces HTTPS connection, do this configuration is not needed.
         session_cookie_secure=True, 
         session_cookie_http_only=True
     )
