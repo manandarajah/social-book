@@ -185,6 +185,7 @@ def create_account():
             return render_template('create-account.html', err='Username or email already exists'), 400
 
         password_hash = ph.hash(password)
+        profile_picture_id = None
 
         try:
             if profile_picture and profile_picture.filename:
