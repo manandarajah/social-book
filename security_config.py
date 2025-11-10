@@ -7,8 +7,6 @@ from flask_talisman import Talisman
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import os
-import hashlib
-import binascii
 
 sec_bp = Blueprint('sec', __name__)
 
@@ -88,13 +86,6 @@ def regenerate_session(app):
 
     app.session_interface.regenerate(session)
 
-# Password hashing
-def hash_password(password):
-    salt = os.urandom(16)
-    hash_bytes = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
-
-    return binascii.hexlify(hash_bytes).decode('utf-8'), binascii.hexlify(salt).decode('utf-8')
-
 @limiter.request_filter
 def exempt_render_requests():
     return request.path in ['/health', '/favicon.ico']
@@ -141,17 +132,5 @@ def cache_headers(response):
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
-    
-    return response
-
-@sec_bp.after_request
-def set_security_headers(response):
-    response.headers['X-Frame-Options'] = 'DENY'
-    response.headers['Content-Security-Policy'] = (
-        "frame-ancestors 'none';"
-        "default-src 'self'; "
-        f"style-src 'self' '{res_hash_1}' '{res_hash_2}' https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css; "
-        f"script-src 'self' '{res_hash_1}' '{res_hash_2}' https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js;"                             
-    )
     
     return response

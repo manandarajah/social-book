@@ -67,7 +67,6 @@ def oauth2callback():
 
 def credentials_to_dict(credentials):
     key = Fernet.generate_key()
-    print(key.decode())
     cipher = Fernet(key)
 
     return {

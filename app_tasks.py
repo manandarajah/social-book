@@ -20,7 +20,7 @@ def allowed_file(filename):
 def validate_file_type(file_data):
     # Check actual file content, not just extension
     mime = magic.from_buffer(file_data, mime=True)
-    allowed_mimes = ['image/jpeg', 'image/png', 'video/mp4']
+    allowed_mimes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/quicktime']
     return mime in allowed_mimes, mime
 
 # Uploads file to the directory

@@ -1,3 +1,4 @@
+from argon2 import PasswordHasher
 from bson.objectid import ObjectId
 from flask import jsonify, redirect, request, render_template, url_for
 from pymongo.errors import DuplicateKeyError
@@ -7,11 +8,10 @@ from flask_resources import User
 from app_tasks import is_direct_call, upload_file, validate_sanitize, validate_sanitize_bulk
 from db import get_db_file, get_db_posts, get_db_users
 from regexes import PASS_REGEX, EMAIL_REGEX, TEXT_REGEX, LEGAL_TEXT_REGEX, GEN_REGEX, DATE_REGEX
-from security_config import hash_password, limiter, regenerate_session
-import hashlib
-import binascii
+from security_config import limiter, regenerate_session
 
-context = None;
+context = None
+ph = PasswordHasher()
 
 def config_app(app):
     global context
@@ -50,34 +50,32 @@ def login():
         if not validate_sanitize_bulk(data_list, 'input'):
             return render_template('login-form.html', err='Invalid username/email or password'), 401
 
-        users_collection = get_db_users('read')
-        user = users_collection.find_one({
-            '$or': [
-                {'username': {"$eq": identifier}},
-                {'email': {"$eq": identifier}}
-            ]
-        })
+        try:
+            user = get_db_users('read').find_one({
+                '$or': [
+                    {'username': {"$eq": identifier}},
+                    {'email': {"$eq": identifier}}
+                ]
+            })
 
-        if not user:
-            return render_template('login-form.html', err='Invalid username/email or password'), 401
+            if not user:
+                return render_template('login-form.html', err='Invalid username/email or password'), 401
 
-        salt_hex = user.get('salt')
-        password_hash_db = user.get('password_hash')
+            hash = user['password_hash']
 
-        if not salt_hex or not password_hash_db:
-            return render_template('login-form.html', err='Invalid username/email or password'), 401
+            if not ph.verify(hash, password):
+                return render_template('login-form.html', err='Invalid username/email or password'), 401
 
-        salt = binascii.unhexlify(salt_hex)
-        hash_bytes = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
-        password_hash = binascii.hexlify(hash_bytes).decode('utf-8')
+            print("Login successful!")
+            user_obj = User(user.get('username'))
+            login_user(user_obj)
+            regenerate_session(context)
 
-        if password_hash != password_hash_db:
-            return render_template('login-form.html', err='Invalid username/email or password'), 401
-
-        print("Login successful!")
-        user_obj = User(user.get('username'))
-        login_user(user_obj)
-        regenerate_session(context)
+            if ph.check_needs_rehash(hash):
+                hash = ph.hash(password)
+                get_db_users('write').update_one({'username': {'$eq': current_user.id}}, {'$set': {'password_hash': hash}})
+        except Exception as e:
+            return render_template('login-form.html', err=f'An error occurred during login: {e}'), 500
 
         return redirect('/')
     else:
@@ -120,13 +118,16 @@ def reset_password():
         confirm_password = request.form.get('confirm_password')
         csrf_token = request.form.get('csrf_token')
         token = request.form.get('token')
+
         if not password or not confirm_password:
             return render_template('reset-password.html', err='Please fill out all fields', token=token), 400
         if password != confirm_password:
             return render_template('reset-password.html', err='Passwords do not match', token=token), 400
         if not validate_sanitize(password, PASS_REGEX):
             return render_template('reset-password.html', err='Password does not meet requirements', token=token), 400
+
         email = None
+
         try:
             email = confirm_token(token).lower()
         except Exception:
@@ -134,8 +135,8 @@ def reset_password():
         if not email:
             return render_template('reset-password.html', err='Invalid or expired token', token=token), 400
 
-        password_hash, salt_hex = hash_password(password)
-        update_result = get_db_users('write').update_one({'email': {"$eq": email}}, {'$set': {'password_hash': password_hash, 'salt': salt_hex}})
+        password_hash = ph.hash(password)
+        update_result = get_db_users('write').update_one({'email': {"$eq": email}}, {'$set': {'password_hash': password_hash}})
 
         if update_result.modified_count == 0:
             return render_template('reset-password.html', err='Could not update password. Contact support.'), 500
@@ -183,8 +184,7 @@ def create_account():
         if users_collection.find_one({'$or': [{'username': {"$eq": username}}, {'email': {"$eq": email}}]}):
             return render_template('create-account.html', err='Username or email already exists'), 400
 
-        password_hash, salt_hex = hash_password(password)
-        profile_picture_id = None
+        password_hash = ph.hash(password)
 
         try:
             if profile_picture and profile_picture.filename:
@@ -194,7 +194,6 @@ def create_account():
                 'username': username,
                 'email': email,
                 'password_hash': password_hash,
-                'salt': salt_hex,
                 'first_name': first_name,
                 'last_name': last_name,
                 'gender': gender,
@@ -260,9 +259,8 @@ def update_account():
         if not confirm_password or new_password != confirm_password:
             return jsonify({'success': False, 'error': 'Passwords do not match'}), 400
 
-        password_hash, salt_hex = hash_password(new_password)
+        password_hash = ph.hash(new_password)
         update_fields['password_hash'] = password_hash
-        update_fields['salt'] = salt_hex
 
     if not update_fields:
         return jsonify({'success': False, 'error': 'No fields to update'}), 400
