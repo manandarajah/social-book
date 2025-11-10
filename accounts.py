@@ -317,15 +317,11 @@ def get_profile(username):
     if not validate_sanitize(username, TEXT_REGEX):
         return jsonify({'error': 'Invalid username'})
 
-    user = get_db_users('read').find_one({'username': {"$eq": username}})
+    user = get_db_users('read').find_one({'username': {"$eq": username}}, {'_id': 0, 'password_hash': 0, 'creds': 0})
 
     if user:
         user['profile_picture_id'] = str(user['profile_picture'])
         user['profile_picture'] = '/api/files/'+str(user['profile_picture']) if user['profile_picture'] is not None else user['profile_picture']
-        user.pop('password_hash', None)
-        user.pop('salt', None)
-        user.pop('_id', None)
-        user.pop('creds', None)
         user.update({'current_user':True}) if username == current_user.id else user.update({'current_user':False})
 
     return user
