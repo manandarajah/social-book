@@ -1,18 +1,5 @@
 body {
   background: #669999;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.brand {
-  font-size: 2rem;
-  font-weight: bold;
-  color: #003333;
-  letter-spacing: 1px;
-  margin-bottom: 1.5rem;
-  text-align: center;
 }
 
 .brand-button {
