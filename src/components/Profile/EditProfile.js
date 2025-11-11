@@ -98,7 +98,7 @@ function EditProfile(props) {
                 </div>
             ))}
             <div className="d-flex flex-column align-items-center mb-4">
-                <input type="submit" className="btn btn-primary" value="Save" />
+                <input type="submit" className="btn btn-primary brand-button" value="Save" />
             </div>
             <input type="hidden" name="profile_picture_id" value={profile.profile_picture_id} />
             <input type="hidden" name="csrf_token" value={csrf_token} />

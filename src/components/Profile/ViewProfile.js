@@ -12,7 +12,7 @@ function ViewProfile(props) {
                     className="rounded-circle mb-3"
                     width="120"
                     height="120"
-                    style={{ objectFit: 'cover', border: '3px solid #1877f2' }}
+                    style={{ objectFit: 'cover', border: '3px solid #003333' }}
                 />
                 <h3 className="fw-bold mb-1">
                     {profile.first_name} {profile.last_name}

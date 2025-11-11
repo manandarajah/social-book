@@ -36,7 +36,7 @@ function CreatePost(props) {
                         <button className="btn btn-light d-flex align-items-center">
                             <i className="bi bi-emoji-smile-fill text-warning me-1"></i> Feeling/Activity
                         </button>
-                        <input type="submit" className="btn btn-primary d-flex align-items-center" value="Create Post" />
+                        <input type="submit" class="btn btn-primary brand-button d-flex align-items-center" value="Create Post" />
                     </div>
                     <input type="hidden" name="csrf_token" value={csrf_token} />
                 </form>

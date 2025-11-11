@@ -48,7 +48,7 @@ function App() {
   return (
     <div>
       {current_user.is_verified && (
-        <div className="bg-light" style={{ minHeight: '100vh' }}>
+        <div style={{ minHeight: '100vh' }}>
           {!path.endsWith("/") && <Profile current_user={current_user} get_cookie={getCsrfTokenFromCookie} />}
           {path.endsWith("/") && <Navbar current_user={current_user} get_cookie={getCsrfTokenFromCookie} />}
           {path.endsWith("/") && (

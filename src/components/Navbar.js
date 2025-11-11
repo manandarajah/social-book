@@ -32,8 +32,8 @@ function Navbar(props) {
 
     return (
         <nav className="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-3">
-            <a className="navbar-brand fw-bold" href="/" style={{ fontSize: '1.7rem', color: '#1877f2' }}>
-                SocialBook
+            <a className="navbar-brand fw-bold" href="/" style={{ fontSize: '1.7rem', color: '#003333' }}>
+                SocialSite
             </a>
             <form className="d-none d-md-flex ms-3" role="search">
                 <input

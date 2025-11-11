@@ -69,7 +69,7 @@ function Profile(props) {
                             : <ViewProfile profile={profile} />}
                         {profile.current_user && !update && (
                             <div className="d-flex flex-column align-items-center mb-4">
-                                <button type="button" className="btn btn-primary" onClick={() => setUpdate(true)}>
+                                <button type="button" className="btn btn-primary brand-button" onClick={() => setUpdate(true)}>
                                     Update
                                 </button>
                             </div>

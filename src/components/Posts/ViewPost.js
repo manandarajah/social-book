@@ -40,7 +40,7 @@ function ViewPost(props) {
                         height="40"
                     />
                     <div>
-                        <a href={post.profile_url} className="fw-semibold">
+                        <a href={post.profile_url} className="brand-link fw-semibold">
                             {post.first_name} {post.last_name}
                         </a>
                         <div className="text-muted" style={{ fontSize: '0.9rem' }}>
@@ -96,7 +96,7 @@ function ViewPost(props) {
                     name="content"
                     placeholder="Post comment here"
                 />
-                <input type="submit" className="btn btn-primary d-flex align-items-center rounded-circle mx-2" value="P" />
+                <input type="submit" className="btn btn-primary brand-button d-flex align-items-center rounded-circle mx-2" value="P" />
                 <input type="hidden" name="id" value={post._id} />
                 <input type="hidden" name="csrf_token" value={csrf_token} />
             </form>

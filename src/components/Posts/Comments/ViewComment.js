@@ -38,7 +38,7 @@ function ViewComment(props) {
                             </Dropdown.Menu>
                         </Dropdown>
                     )}
-                    <a href={comment.profile_url} className="fw-semibold">
+                    <a href={comment.profile_url} className="brand-link fw-semibold">
                         {comment.first_name} {comment.last_name}
                     </a>
                     <div>

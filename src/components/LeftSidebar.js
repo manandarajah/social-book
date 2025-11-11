@@ -16,7 +16,7 @@ function LeftSidebar(props) {
                             width="36"
                             height="36"
                         />
-                        <span className="fw-semibold"><a href={path}>{current_user.first_name} {current_user.last_name}</a></span>
+                        <span className="fw-semibold"><a href={path} class='text-white'>{current_user.first_name} {current_user.last_name}</a></span>
                     </li>
                     <li className="list-group-item bg-transparent border-0 d-flex align-items-center">
                         <i className="bi bi-people-fill me-2" style={{ color: '#1877f2', fontSize: '1.3rem' }}></i>

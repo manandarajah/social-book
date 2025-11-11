@@ -56,7 +56,7 @@ function EditPost(props) {
                         alt="Post"
                         className="img-fluid rounded mb-2"
                     />)}
-                    <input type="submit" class="btn btn-primary" value="Save" />
+                    <input type="submit" class="btn btn-primary brand-button" value="Save" />
                     <input type="hidden" name="csrf_token" value={csrf_token} />
                 </form>
             </div>

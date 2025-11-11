@@ -68,7 +68,7 @@ function EditComment(props) {
                 <input type="hidden" name="csrf_token" value={csrf_token} />
                 <button
                     type="submit"
-                    className="btn btn-primary mt-2"
+                    className="btn btn-primary brand-button mt-2"
                     disabled={!comment.content || comment.content.trim() === ""}
                 >
                     Save
