@@ -9,9 +9,9 @@ ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'vide
 MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024  # 50MB
 
 # Email configuration
-EMAIL_FROM_ADDRESS = "no-reply@dating-social-media.com"
-EMAIL_VERIFICATION_SUBJECT = "Verify Email - Social Book"
-EMAIL_PASSWORD_RESET_SUBJECT = "Password Reset - Dating Social Media"
+EMAIL_FROM_ADDRESS = "no-reply@social-media.com"
+EMAIL_VERIFICATION_SUBJECT = "Verify Email - SocialSite"
+EMAIL_PASSWORD_RESET_SUBJECT = "Password Reset - SocialSite"
 
 # Token expiration
 TOKEN_EXPIRATION_SECONDS = 900  # 15 minutes
@@ -26,7 +26,6 @@ GMAIL_SCOPES = [
 ]
 
 # Rate limiting
-PASSWORD_RESET_RATE_LIMIT = "5 per hour"
 DEFAULT_RATE_LIMIT = "3 per 3 hours"
 
 # Session configuration
