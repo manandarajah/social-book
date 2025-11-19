@@ -9,6 +9,13 @@ from app_tasks import is_direct_call, upload_file, validate_sanitize, validate_s
 from db import get_db_file, get_db_posts, get_db_users
 from regexes import PASS_REGEX, EMAIL_REGEX, TEXT_REGEX, LEGAL_TEXT_REGEX, GEN_REGEX, DATE_REGEX
 from security_config import limiter, regenerate_session
+from constants import (
+    ERROR_INVALID_CREDENTIALS, ERROR_INVALID_INPUT, ERROR_MISSING_FIELDS,
+    ERROR_PASSWORDS_MISMATCH, ERROR_USERNAME_EXISTS, ERROR_ACCOUNT_CREATION_FAILED,
+    ERROR_LOGIN_FAILED, ERROR_UPDATE_FAILED, ERROR_DIRECT_CALL_DENIED,
+    HTTP_OK, HTTP_BAD_REQUEST, HTTP_UNAUTHORIZED, HTTP_FORBIDDEN, HTTP_CONFLICT,
+    HTTP_INTERNAL_SERVER_ERROR, PASSWORD_RESET_RATE_LIMIT
+)
 import logging
 
 # Configure logging
@@ -64,7 +71,7 @@ def login():
 
         if not validate_sanitize_bulk(data_list, 'input'):
             logger.warning(f"Login attempt with invalid input format")
-            return render_template('login-form.html', err='Invalid username/email or password'), 401
+            return render_template('login-form.html', err=ERROR_INVALID_CREDENTIALS), HTTP_UNAUTHORIZED
 
         try:
             user = get_db_users('read').find_one({
@@ -76,13 +83,13 @@ def login():
 
             if not user:
                 logger.warning(f"Login attempt for non-existent user")
-                return render_template('login-form.html', err='Invalid username/email or password'), 401
+                return render_template('login-form.html', err=ERROR_INVALID_CREDENTIALS), HTTP_UNAUTHORIZED
 
             hash = user['password_hash']
 
             if not ph.verify(hash, password):
                 logger.warning(f"Failed login attempt for user: {user.get('username')}")
-                return render_template('login-form.html', err='Invalid username/email or password'), 401
+                return render_template('login-form.html', err=ERROR_INVALID_CREDENTIALS), HTTP_UNAUTHORIZED
 
             logger.info(f"User logged in successfully: {user.get('username')}")
             user_obj = User(user.get('username'))
@@ -94,7 +101,7 @@ def login():
                 get_db_users('write').update_one({'username': {'$eq': current_user.id}}, {'$set': {'password_hash': hash}})
         except Exception as e:
             logger.error(f"Error during login: {str(e)}")
-            return render_template('login-form.html', err='An error occurred during login'), 500
+            return render_template('login-form.html', err=ERROR_LOGIN_FAILED), HTTP_INTERNAL_SERVER_ERROR
 
         return redirect('/')
     else:
@@ -107,7 +114,7 @@ def login():
             message = None
         return render_template('login-form.html', display='d-none' if message is None else '', message=message)
 
-@limiter.limit("5 per hour")
+@limiter.limit(PASSWORD_RESET_RATE_LIMIT)
 def forgot_password():
     """
     Handle forgot password requests.

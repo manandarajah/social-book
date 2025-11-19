@@ -2,6 +2,11 @@ from datetime import datetime
 from flask import request, jsonify
 from werkzeug.utils import secure_filename
 from db import get_db_file
+from constants import (
+    ALLOWED_FILE_EXTENSIONS, ALLOWED_MIME_TYPES, MAX_FILE_SIZE_BYTES,
+    ERROR_FILE_TOO_LARGE, ERROR_EMPTY_FILE, ERROR_FILE_TYPE_NOT_ALLOWED,
+    ERROR_INVALID_FILE_TYPE, HTTP_PAYLOAD_TOO_LARGE, HTTP_BAD_REQUEST
+)
 import os
 import re
 import bleach
@@ -18,9 +23,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov'}
-MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
-
 def allowed_file(filename):
     """
     Check if a filename has an allowed extension.
@@ -32,7 +34,7 @@ def allowed_file(filename):
         True if extension is allowed, False otherwise
     """
     return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_FILE_EXTENSIONS
 
 def validate_file_type(file_data):
     """
@@ -45,8 +47,7 @@ def validate_file_type(file_data):
         Tuple of (is_valid, mime_type)
     """
     mime = magic.from_buffer(file_data, mime=True)
-    allowed_mimes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/quicktime']
-    return mime in allowed_mimes, mime
+    return mime in ALLOWED_MIME_TYPES, mime
 
 def upload_file(file):
     """
@@ -60,22 +61,22 @@ def upload_file(file):
     """
     # Validate size
     file.seek(0, os.SEEK_END)
-    if file.tell() > MAX_FILE_SIZE:
-        logger.warning(f"File upload rejected: size exceeds {MAX_FILE_SIZE} bytes")
-        return 'File too large', 413
+    if file.tell() > MAX_FILE_SIZE_BYTES:
+        logger.warning(f"File upload rejected: size exceeds {MAX_FILE_SIZE_BYTES} bytes")
+        return ERROR_FILE_TOO_LARGE, HTTP_PAYLOAD_TOO_LARGE
     file.seek(0)
 
     file_data = file.read()
 
     if len(file_data) == 0:
-        return "Empty File"
+        return ERROR_EMPTY_FILE
 
     filename = secure_filename(file.filename)
 
     # Validate file extension
     if not allowed_file(filename):
         logger.warning(f"File upload rejected: invalid extension for {filename}")
-        return "File type not allowed"
+        return ERROR_FILE_TYPE_NOT_ALLOWED
 
     unique_filename = f"{uuid.uuid4()}_{filename}"
     
@@ -84,7 +85,7 @@ def upload_file(file):
     # Validate actual file type
     if not file_validated:
         logger.warning(f"File upload rejected: invalid MIME type {detected_mime}")
-        return 'Invalid file type', 400
+        return ERROR_INVALID_FILE_TYPE, HTTP_BAD_REQUEST
 
     logger.info(f"File uploaded: {filename} ({detected_mime})")
     return get_db_file('write').put(

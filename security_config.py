@@ -6,6 +6,7 @@ from flask_session import Session
 from flask_talisman import Talisman
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from constants import DEFAULT_RATE_LIMIT, SESSION_COOKIE_MAX_AGE
 import os
 
 sec_bp = Blueprint('sec', __name__)
@@ -15,7 +16,7 @@ res_hash_2 = None
 
 limiter = Limiter(
     key_func=get_remote_address,
-    default_limits=["3 per 3 hours"],
+    default_limits=[DEFAULT_RATE_LIMIT],
     default_limits_deduct_when=lambda r: r.status_code >= 400,
     storage_uri="memory://localhost:6379"
 )
@@ -110,7 +111,7 @@ def generate_csrf_cookie(response):
         httponly=False,     # JavaScript can read this
         samesite='Strict',  # Prevents CSRF attacks
         secure=True,        # Only sent over HTTPS
-        max_age=3600
+        max_age=SESSION_COOKIE_MAX_AGE
     )
     
     return response

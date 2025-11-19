@@ -8,6 +8,12 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from email.message import EmailMessage
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
+from constants import (
+    GMAIL_API_SERVICE, GMAIL_API_VERSION, GMAIL_SCOPES,
+    TOKEN_EXPIRATION_SECONDS, EMAIL_FROM_ADDRESS,
+    EMAIL_VERIFICATION_SUBJECT, EMAIL_PASSWORD_RESET_SUBJECT,
+    HTTP_BAD_REQUEST, HTTP_OK
+)
 import logging
 import os
 import base64
@@ -22,13 +28,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-API_SERVICE="gmail"
-API_VERSION="v1"
-SCOPES = [
-    'https://www.googleapis.com/auth/gmail.readonly',
-    'https://www.googleapis.com/auth/gmail.send',
-    'https://www.googleapis.com/auth/gmail.compose'
-]
+API_SERVICE = GMAIL_API_SERVICE
+API_VERSION = GMAIL_API_VERSION
+SCOPES = GMAIL_SCOPES
 
 load_dotenv()
 
@@ -52,8 +54,6 @@ if not CLIENT_SECRET:
 CLIENT_SECRETS_FILE = os.environ.get('CLIENT_SECRETS_FILE')
 if not CLIENT_SECRETS_FILE:
     raise ValueError("CLIENT_SECRETS_FILE environment variable is required")
-
-TOKEN_EXPIRATION_SECONDS = 900  # 15 minutes
 
 def get_routes():
     return [
@@ -128,10 +128,10 @@ def aes_verify_email(token):
     email = confirm_token(token)
 
     if not email:
-        return jsonify({'success':False, 'message':'Invalid or expired token'}), 400
+        return jsonify({'success':False, 'message':'Invalid or expired token'}), HTTP_BAD_REQUEST
     
     get_db_users('write').update_one({'email': {"$eq": email}},{'$set': {'is_verified': True}})
-    return jsonify({'success': True, 'message': 'Your account has been verified! You can now use this web app'}), 200
+    return jsonify({'success': True, 'message': 'Your account has been verified! You can now use this web app'}), HTTP_OK
 
 def aes_forgot_password(token):
     """
@@ -142,12 +142,12 @@ def aes_forgot_password(token):
     # Confirm and get the email using the provided token
     email = confirm_token(token)
     if not email:
-        return jsonify({'success': False, 'message': 'Invalid or expired token.'}), 400
+        return jsonify({'success': False, 'message': 'Invalid or expired token.'}), HTTP_BAD_REQUEST
     
     users_collection = get_db_users('read')
     user = users_collection.find_one({'email': {"$eq": email}})
     if not user:
-        return jsonify({'success': False, 'message': 'User not found.'}), 400
+        return jsonify({'success': False, 'message': 'User not found.'}), HTTP_BAD_REQUEST
     
     return True
 
@@ -195,8 +195,8 @@ def aes_send_registration_email(email, first_name):
         message.set_content('Hi '+first_name+',<br><br>Thank you for registering with us! <a href='+verify_url+'>Verify your email!</a>', subtype='html')
 
         message['To'] = email
-        message['From'] = "no-reply@dating-social-media.com"
-        message['Subject'] = "Verify Email - Social Book"
+        message['From'] = EMAIL_FROM_ADDRESS
+        message['Subject'] = EMAIL_VERIFICATION_SUBJECT
 
         # encoded message
         encoded_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
@@ -262,8 +262,8 @@ def aes_send_forgot_password_email(email, first_name):
         )
 
         message['To'] = email
-        message['From'] = "no-reply@dating-social-media.com"
-        message['Subject'] = "Password Reset - Dating Social Media"
+        message['From'] = EMAIL_FROM_ADDRESS
+        message['Subject'] = EMAIL_PASSWORD_RESET_SUBJECT
 
         encoded_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
 

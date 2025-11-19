@@ -8,6 +8,10 @@ from security_config import regenerate_session
 from regexes import POST_REGEX, TEXT_REGEX
 from app_tasks import is_direct_call, upload_file, validate_sanitize
 from db import get_db_file, get_db_posts
+from constants import (
+    ERROR_DIRECT_CALL_DENIED, ERROR_INVALID_INPUT, ERROR_POST_CREATION_FAILED,
+    ERROR_POST_NOT_FOUND, HTTP_BAD_REQUEST, HTTP_FORBIDDEN, HTTP_INTERNAL_SERVER_ERROR
+)
 import base64
 import logging
 
@@ -45,7 +49,7 @@ def create_post():
         Redirect to home on success, error message on failure
     """
     if is_direct_call():
-        return jsonify({'error': 'Direct calls are not allowed. Access denied!'}), 400
+        return jsonify({'error': ERROR_DIRECT_CALL_DENIED}), HTTP_BAD_REQUEST
 
     data = request.form
     token = data.get('csrf_token')
@@ -55,11 +59,11 @@ def create_post():
 
     # Only require content (text) for a post; photo/video is optional
     if not content:
-        return jsonify({'error': 'Post content is required'}), 400
+        return jsonify({'error': 'Post content is required'}), HTTP_BAD_REQUEST
 
     if not validate_sanitize(content, POST_REGEX):
         logger.warning(f"Post creation attempt with invalid content by user: {current_user.id}")
-        return jsonify({'error': 'Invalid data'}), 400
+        return jsonify({'error': ERROR_INVALID_INPUT}), HTTP_BAD_REQUEST
 
     content = base64.b64encode(content.encode('utf-8'))
 
@@ -83,7 +87,7 @@ def create_post():
         logger.info(f"Post created by user: {current_user.id}")
     except Exception as e:
         logger.error(f"Error creating post: {str(e)}")
-        return jsonify({'error': 'Failed to create post'}), 500
+        return jsonify({'error': ERROR_POST_CREATION_FAILED}), HTTP_INTERNAL_SERVER_ERROR
 
     regenerate_session(context)
     return redirect('/')
